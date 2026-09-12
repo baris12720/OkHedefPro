@@ -18,6 +18,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.View;
+import android.view.WindowInsetsController;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.LoadAdError;
@@ -42,12 +44,38 @@ public class MainActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        hideSystemUI();
 
         MobileAds.initialize(this, initializationStatus -> {});
         loadRewardedAd();
 
         gameView = new GameView(this);
         setContentView(gameView);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) hideSystemUI();
+    }
+
+    private void hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getWindow().setDecorFitsSystemWindows(false);
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                controller.hide(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
     }
 
     public void loadRewardedAd() {
@@ -107,6 +135,7 @@ public class MainActivity extends Activity {
 
         private enum State { MENU, PLAYING, GAMEOVER }
         private State gameState = State.MENU;
+        private int level = 1;
 
         private int score = 0;
         private int highScore = 0;
@@ -171,11 +200,11 @@ public class MainActivity extends Activity {
             screenWidth = getWidth();
             screenHeight = getHeight();
 
-            bowX = 150;
-            bowY = screenHeight / 2f;
+            bowX = screenWidth / 2f;
+            bowY = screenHeight - 220;
 
-            targetX = screenWidth - 250;
-            targetY = screenHeight / 2f;
+            targetX = screenWidth / 2f;
+            targetY = 240;
 
             playing = true;
             gameThread = new Thread(this);
@@ -186,6 +215,11 @@ public class MainActivity extends Activity {
         public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             screenWidth = width;
             screenHeight = height;
+
+            bowX = screenWidth / 2f;
+            bowY = screenHeight - 220;
+            targetX = screenWidth / 2f;
+            targetY = 240;
         }
 
         @Override
@@ -223,8 +257,8 @@ public class MainActivity extends Activity {
         private void update() {
             if (gameState == State.PLAYING) {
                 float currentSpeed = targetSpeedY + (score / 40f);
-                targetY += currentSpeed * targetDir;
-                if (targetY - targetRadius < 120 || targetY + targetRadius > screenHeight - 100) {
+                targetX += currentSpeed * targetDir;
+                if (targetX - targetRadius < 40 || targetX + targetRadius > screenWidth - 40) {
                     targetDir *= -1;
                 }
 
@@ -236,9 +270,9 @@ public class MainActivity extends Activity {
 
                     float distToCenter = (float) Math.hypot(flyingArrow.x - targetX, flyingArrow.y - targetY);
 
-                    if (flyingArrow.x > screenWidth || flyingArrow.y > screenHeight || flyingArrow.x < 0) {
+                    if (flyingArrow.x > screenWidth || flyingArrow.x < 0 || flyingArrow.y > screenHeight || flyingArrow.y < -150) {
                         missArrow();
-                    } else if (distToCenter <= targetRadius && flyingArrow.x >= targetX - 25) {
+                    } else if (distToCenter <= targetRadius) {
                         hitTarget(distToCenter);
                     }
                 }
@@ -304,7 +338,16 @@ public class MainActivity extends Activity {
             }
 
             floatingTexts.add(new FloatingText(text, targetX, targetY, Color.YELLOW));
-            spawnParticles(targetX, targetY);
+            spawnParticles(targetX, targetY, 18);
+
+            int newLevel = 1 + (score / 50);
+            if (newLevel > level) {
+                level = newLevel;
+                floatingTexts.add(new FloatingText("SEVIYE " + level + "!", screenWidth / 2f, screenHeight / 2f, Color.parseColor("#FFD700")));
+                spawnParticles(targetX, targetY, 45);
+                triggerHaptic(150);
+                SoundGenerator.playBullseye();
+            }
 
             stuckArrows.add(new Arrow(flyingArrow.x, flyingArrow.y, 0, 0, true));
             flyingArrow = null;
@@ -330,10 +373,17 @@ public class MainActivity extends Activity {
         }
 
         private void spawnParticles(float cx, float cy) {
-            for (int i = 0; i < 15; i++) {
+            spawnParticles(cx, cy, 15);
+        }
+
+        private void spawnParticles(float cx, float cy, int count) {
+            int[] colors = { Color.YELLOW, Color.parseColor("#FF7043"), Color.parseColor("#FFD700"), Color.RED, Color.WHITE };
+            for (int i = 0; i < count; i++) {
                 float angle = random.nextFloat() * (float)(Math.PI * 2);
-                float speed = random.nextFloat() * 6f + 2f;
-                particles.add(new Particle(cx, cy, (float)Math.cos(angle) * speed, (float)Math.sin(angle) * speed));
+                float speed = random.nextFloat() * 8f + 2f;
+                Particle p = new Particle(cx, cy, (float)Math.cos(angle) * speed, (float)Math.sin(angle) * speed);
+                p.color = colors[random.nextInt(colors.length)];
+                particles.add(p);
             }
         }
 
@@ -402,20 +452,12 @@ public class MainActivity extends Activity {
 
             paint.setColor(Color.parseColor("#d4af37"));
             paint.setStrokeWidth(12);
-            canvas.drawLine(bowX, bowY - 80, bowX, bowY + 80, paint);
+            canvas.drawLine(bowX - 80, bowY, bowX + 80, bowY, paint);
 
-            if (isAiming) {
-                paint.setStrokeWidth(4);
-                paint.setColor(Color.WHITE);
-                canvas.drawLine(bowX, bowY - 80, pullX, pullY, paint);
-                canvas.drawLine(pullX, pullY, bowX, bowY + 80, paint);
-                drawArrowGraphic(canvas, pullX, pullY);
-            } else {
-                paint.setStrokeWidth(4);
-                paint.setColor(Color.WHITE);
-                canvas.drawLine(bowX, bowY - 80, bowX - 35, bowY, paint);
-                canvas.drawLine(bowX - 35, bowY, bowX, bowY + 80, paint);
-            }
+            paint.setStrokeWidth(4);
+            paint.setColor(Color.WHITE);
+            canvas.drawLine(bowX - 80, bowY, bowX, bowY - 35, paint);
+            canvas.drawLine(bowX, bowY - 35, bowX + 80, bowY, paint);
 
             if (flyingArrow != null) {
                 drawArrowGraphic(canvas, flyingArrow.x, flyingArrow.y);
@@ -423,9 +465,9 @@ public class MainActivity extends Activity {
 
             for (int i = 0; i < particles.size(); i++) {
                 Particle p = particles.get(i);
-                paint.setColor(Color.YELLOW);
+                paint.setColor(p.color);
                 paint.setAlpha((int)(p.alpha * 255));
-                canvas.drawCircle(p.x, p.y, 6, paint);
+                canvas.drawCircle(p.x, p.y, 7, paint);
             }
             paint.setAlpha(255);
 
@@ -505,11 +547,8 @@ public class MainActivity extends Activity {
                             startGame();
                         }
                     } else if (gameState == State.PLAYING) {
-                        if (flyingArrow == null && Math.hypot(x - bowX, y - bowY) < 250) {
-                            isAiming = true;
-                            pullX = x;
-                            pullY = y;
-                            SoundGenerator.playBowPull();
+                        if (flyingArrow == null) {
+                            shootArrowTo(x, y);
                         }
                     } else if (gameState == State.GAMEOVER) {
                         if (x >= screenWidth / 2f - 240 && x <= screenWidth / 2f + 240 &&
@@ -542,6 +581,19 @@ public class MainActivity extends Activity {
                     break;
             }
             return true;
+        }
+
+        private void shootArrowTo(float touchX, float touchY) {
+            float dx = touchX - bowX;
+            float dy = touchY - bowY;
+            float dist = (float) Math.hypot(dx, dy);
+            if (dist < 1f) dist = 1f;
+            float speed = 22f;
+            float vx = (dx / dist) * speed;
+            float vy = (dy / dist) * speed;
+            flyingArrow = new Arrow(bowX, bowY, vx, vy, false);
+            SoundGenerator.playArrowRelease();
+            triggerHaptic(45);
         }
 
         private void startGame() {
@@ -593,6 +645,7 @@ public class MainActivity extends Activity {
     public static class Particle {
         public float x, y, vx, vy;
         public float alpha = 1.0f;
+        public int color = Color.YELLOW;
         public Particle(float x, float y, float vx, float vy) {
             this.x = x; this.y = y; this.vx = vx; this.vy = vy;
         }
