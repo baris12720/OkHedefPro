@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -19,7 +20,6 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Güvenli Tam Ekran (Immersive Mode)
         hideSystemUI();
 
         gameView = new GameView(this);
@@ -27,14 +27,18 @@ public class MainActivity extends Activity {
     }
 
     private void hideSystemUI() {
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        try {
+            View decorView = getWindow().getDecorView();
+            decorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        } catch (Exception e) {
+            Log.e("OkHedefPro", "SystemUI Hide Error: " + e.getMessage());
+        }
     }
 
     @Override
@@ -58,7 +62,8 @@ public class MainActivity extends Activity {
 
         private Thread gameThread = null;
         private SurfaceHolder surfaceHolder;
-        private volatile boolean isPlaying;
+        private volatile boolean isPlaying = false;
+        private volatile boolean isSurfaceReady = false;
         private Paint paint;
 
         private int screenWidth = 1080;
@@ -69,10 +74,12 @@ public class MainActivity extends Activity {
             surfaceHolder = getHolder();
             surfaceHolder.addCallback(this);
             paint = new Paint();
+            paint.setAntiAlias(true);
         }
 
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
+            isSurfaceReady = true;
             resume();
         }
 
@@ -86,14 +93,17 @@ public class MainActivity extends Activity {
 
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
+            isSurfaceReady = false;
             pause();
         }
 
         @Override
         public void run() {
             while (isPlaying) {
-                update();
-                draw();
+                if (isSurfaceReady) {
+                    update();
+                    draw();
+                }
                 sleep();
             }
         }
@@ -103,23 +113,36 @@ public class MainActivity extends Activity {
         }
 
         private void draw() {
-            if (surfaceHolder.getSurface().isValid()) {
-                Canvas canvas = surfaceHolder.lockCanvas();
+            if (!surfaceHolder.getSurface().isValid()) {
+                return;
+            }
+
+            Canvas canvas = null;
+            try {
+                canvas = surfaceHolder.lockCanvas();
+                if (canvas != null) {
+                    // Yeşil Arka Plan (Siyah Ekranı Engellemek İçin)
+                    canvas.drawColor(Color.parseColor("#2E7D32"));
+
+                    // Ekran Ortasına Yazı Çizimi
+                    paint.setColor(Color.WHITE);
+                    paint.setTextSize(screenWidth / 20f > 30 ? screenWidth / 20f : 40);
+                    paint.setTextAlign(Paint.Align.CENTER);
+                    
+                    canvas.drawText("OK HEDEF PRO", screenWidth / 2f, screenHeight / 3f, paint);
+                    
+                    paint.setTextSize(screenWidth / 35f > 20 ? screenWidth / 35f : 30);
+                    paint.setColor(Color.YELLOW);
+                    canvas.drawText("Oyuna Başlamak İçin Ekrana Dokunun", screenWidth / 2f, screenHeight / 2f, paint);
+                }
+            } catch (Exception e) {
+                Log.e("OkHedefPro", "Draw Error: " + e.getMessage());
+            } finally {
                 if (canvas != null) {
                     try {
-                        // Ekranı temizle
-                        canvas.drawColor(Color.BLACK);
-
-                        // Örnek çizim (Hedef / Oyun Görselleri)
-                        paint.setColor(Color.WHITE);
-                        paint.setTextSize(50);
-                        canvas.drawText("Ok Hedef Pro", 100, 100, paint);
-                        
-                        // Ekran boyutunu kontrol çizimi
-                        paint.setColor(Color.GREEN);
-                        canvas.drawRect(0, 0, screenWidth, screenHeight, paint);
-                    } finally {
                         surfaceHolder.unlockCanvasAndPost(canvas);
+                    } catch (Exception e) {
+                        Log.e("OkHedefPro", "Unlock Canvas Error: " + e.getMessage());
                     }
                 }
             }
@@ -127,29 +150,27 @@ public class MainActivity extends Activity {
 
         private void sleep() {
             try {
-                Thread.sleep(17); // ~60 FPS
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.sleep(16); // ~60 FPS
+            } catch (InterruptedException ignored) {
             }
         }
 
-        public void resume() {
-            isPlaying = true;
-            if (gameThread == null || !gameThread.isAlive()) {
+        public synchronized void resume() {
+            if (!isPlaying) {
+                isPlaying = true;
                 gameThread = new Thread(this);
                 gameThread.start();
             }
         }
 
-        public void pause() {
+        public synchronized void pause() {
             isPlaying = false;
-            try {
-                if (gameThread != null) {
-                    gameThread.join();
-                    gameThread = null;
+            if (gameThread != null) {
+                try {
+                    gameThread.join(500);
+                } catch (InterruptedException ignored) {
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                gameThread = null;
             }
         }
 
