@@ -96,7 +96,7 @@ public class MainActivity extends Activity {
     }
 
     // --- GAME VIEW & ENGINE ---
-    public static class GameView extends SurfaceView implements Runnable {
+    public static class GameView extends SurfaceView implements Runnable, SurfaceHolder.Callback {
         private Thread gameThread;
         private volatile boolean playing;
         private SurfaceHolder surfaceHolder;
