@@ -1,10 +1,10 @@
-# Ok Hedef Pro v4
+# Ok Hedef Pro V5
 
-Premium görsel yenileme:
-- Eski düz tahta hedef yerine metal/renkli profesyonel hedef görünümü
-- Sinematik gökyüzü, dağ, orman ve su arka planı
-- Cam efektli HUD ve modern butonlar
-- Daha güçlü menü ve sonuç sunumu
-- Mevcut 50 bölüm, combo, skor, ses ve ilerleme sistemleri korunur
-
-Build: Android Studio veya GitHub Actions.
+V4'teki ok atma sorununu düzelten V5.
+- Tam ekran yatay oyun
+- Oyun başlayınca ok ekranın ortasında
+- Ekranın herhangi bir yerine dokununca ok doğrudan o noktaya uçar
+- 50 bölüm, 5 bölge, 5 hedef tipi
+- Hareketli, buz, bomba ve kalkanlı hedefler
+- Kombo, skor, parçacık efektleri, bölüm kilidi ve kayıt
+- GitHub Actions ile debug APK
