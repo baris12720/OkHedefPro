@@ -1,0 +1,204 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>HelalGuard</title>
+<style>
+:root{
+ --g:#087443; --g2:#0a9455; --gold:#ffd166; --bg:#f7faf8; --card:#ffffff; --ink:#12241a; --sub:#5c6f64;
+ --line:#e2ebe4; --haram:#d94848; --uncertain:#e0a02a; --halal:#0a9455; --unknown:#8a97a1;
+ --r-halal:#e8f7ee; --r-haram:#fdeaea; --r-uncertain:#fff5e0; --r-unknown:#eef1f3;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Roboto,sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column;height:100%;}
+::-webkit-scrollbar{width:0;height:0}
+header{background:var(--g);color:#fff;padding:14px 16px calc(14px + env(safe-area-inset-top,0px));padding-top:calc(14px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px;flex:0 0 auto;position:relative;z-index:5;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.brand{width:38px;height:38px;border-radius:11px;background:linear-gradient(160deg,#0a9455,#065c34);display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.brand svg{width:24px;height:24px}
+header h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.2px;flex:1}
+.langbtn{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer}
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(90px + env(safe-area-inset-bottom,0px));}
+.screen{display:none}
+.screen.active{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h2{font-size:20px;margin:2px 0 12px;font-weight:800}
+p.lead{color:var(--sub);font-size:14px;line-height:1.5;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,40,30,.04)}
+textarea{width:100%;min-height:120px;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-size:15px;font-family:inherit;resize:vertical;background:#fbfdfb}
+textarea:focus{outline:none;border-color:var(--g2)}
+input[type=text]{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-size:15px;font-family:inherit;background:#fbfdfb}
+input[type=text]:focus{outline:none;border-color:var(--g2)}
+.btn{background:var(--g);color:#fff;border:none;border-radius:12px;padding:13px 18px;font-size:15px;font-weight:800;cursor:pointer;width:100%;margin-top:10px;transition:transform .08s}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:transparent;color:var(--g);border:1.5px solid var(--g)}
+.btn.gold{background:var(--gold);color:#3a2c00}
+.disclaimer{background:#fff8e8;border:1px solid #f0dca0;border-radius:12px;padding:10px 12px;font-size:12.5px;color:#6b5620;line-height:1.5;display:flex;gap:8px;align-items:flex-start}
+.disclaimer svg{flex:0 0 auto;margin-top:1px}
+.verdict{border-radius:16px;padding:18px;text-align:center;margin-bottom:14px}
+.verdict .big{font-size:22px;font-weight:900;margin-bottom:4px}
+.verdict .sub{font-size:13px;opacity:.85}
+.v-halal{background:var(--r-halal);color:var(--halal)}
+.v-haram{background:var(--r-haram);color:var(--haram)}
+.v-uncertain{background:var(--r-uncertain);color:var(--uncertain)}
+.v-unknown{background:var(--r-unknown);color:var(--unknown)}
+.finding{border-radius:12px;padding:12px;margin-bottom:8px;border-left:4px solid var(--line)}
+.finding.f-haram{background:var(--r-haram);border-color:var(--haram)}
+.finding.f-uncertain{background:var(--r-uncertain);border-color:var(--uncertain)}
+.finding .fh{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px;margin-bottom:3px}
+.finding .fh .tag{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px}
+.f-haram .tag{background:var(--haram);color:#fff}
+.f-uncertain .tag{background:var(--uncertain);color:#3a2c00}
+.finding .fr{font-size:13px;color:var(--sub);line-height:1.4}
+.finding .fm{font-size:11.5px;color:var(--sub);margin-top:4px;font-style:italic}
+.searchbox{position:relative;margin-bottom:14px}
+.searchbox input{padding-left:38px}
+.searchbox svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--sub)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:7px 14px;font-size:12.5px;font-weight:700;color:var(--sub);cursor:pointer}
+.chip.active{background:var(--g);border-color:var(--g);color:#fff}
+.entry{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:9px}
+.entry .eh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.entry .name{font-weight:800;font-size:14.5px}
+.entry .badge{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:20px;text-transform:uppercase}
+.badge.b-haram{background:var(--r-haram);color:var(--haram)}
+.badge.b-uncertain{background:var(--r-uncertain);color:var(--uncertain)}
+.entry .desc{font-size:13px;color:var(--sub);line-height:1.4}
+.entry .pats{font-size:11px;color:#93a39a;margin-top:5px}
+.okentry{background:var(--r-halal);border:1px solid #cdeedb;border-radius:12px;padding:11px 13px;margin-bottom:8px;font-size:13.5px;color:#0a5c38;font-weight:600}
+.pinfo{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.pinfo img{width:60px;height:60px;border-radius:10px;object-fit:cover;background:#eef1ee;flex:0 0 auto}
+.pinfo .pn{font-weight:800;font-size:15px}
+.pinfo .pb{font-size:12.5px;color:var(--sub)}
+.hist-item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.hist-dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+.dot-halal{background:var(--halal)}.dot-haram{background:var(--haram)}.dot-uncertain{background:var(--uncertain)}.dot-unknown{background:var(--unknown)}
+.hist-text{flex:1;min-width:0}
+.hist-title{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-sub{font-size:11.5px;color:var(--sub)}
+.empty{text-align:center;padding:50px 20px;color:var(--sub)}
+.empty svg{width:48px;height:48px;opacity:.3;margin-bottom:10px}
+.settingsrow{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.settingsrow:last-child{border-bottom:none}
+.settingsrow .sl{font-weight:700;font-size:14.5px}
+.settingsrow .ss{font-size:12px;color:var(--sub);margin-top:2px}
+.switch{width:46px;height:26px;background:var(--line);border-radius:20px;position:relative;cursor:pointer;flex:0 0 auto}
+.switch.on{background:var(--g)}
+.switch .kn{width:20px;height:20px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch.on .kn{left:23px}
+nav.tabbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
+nav.tabbar button{flex:1;background:none;border:none;padding:10px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#93a39a;font-size:10.5px;font-weight:700;cursor:pointer}
+nav.tabbar button svg{width:22px;height:22px}
+nav.tabbar button.active{color:var(--g)}
+.spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px;margin-right:7px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.section-title{font-size:12px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 10px}
+.toast{position:fixed;left:20px;right:20px;bottom:calc(96px + env(safe-area-inset-bottom,0px));background:#1c2b22;color:#fff;padding:13px 16px;border-radius:12px;font-size:13.5px;text-align:center;z-index:20;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;transform:translateY(8px)}
+.toast.show{opacity:1;transform:none}
+</style></head>
+<body>
+<header>
+ <div class="brand"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5l7-3z" fill="#fff"/><path d="M8.5 12l2.3 2.3L16 9" stroke="#087443" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+ <h1 id="appTitle">HelalGuard</h1>
+ <button class="langbtn" id="langBtn">TR</button>
+</header>
+<main id="main">
+
+<section class="screen active" id="s-home">
+ <h2 data-i="home_title">İçindekiler Analizi</h2>
+ <p class="lead" data-i="home_lead">Ürün etiketindeki içindekiler listesini yapıştır, olası uyarıları gör.</p>
+ <div class="card">
+  <textarea id="ingInput" data-i-ph="home_placeholder" placeholder="Örn: şeker, su, jelatin, E471, tuz..."></textarea>
+  <button class="btn" id="analyzeBtn" data-i="home_analyze">Analiz Et</button>
+  <button class="btn gold" id="ocrBtn" data-i="home_ocr_btn" style="display:none">📷 Fotoğrafla Oku (Yapay Zekâ)</button>
+ </div>
+ <div id="resultArea"></div>
+ <div class="disclaimer">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#a4842a" stroke-width="2"/><path d="M12 8v5" stroke="#a4842a" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1.1" fill="#a4842a"/></svg>
+  <span data-i="disclaimer_short">Bu sonuçlar bilgilendirme amaçlıdır, dini bir fetva değildir. Kesin karar için sertifikalı helal kurumlarına veya bir alime danışın.</span>
+ </div>
+</section>
+
+<section class="screen" id="s-barcode">
+ <h2 data-i="barcode_title">Barkod Sorgula</h2>
+ <p class="lead" data-i="barcode_lead">Ürün barkod numarasını gir, Open Food Facts veritabanından içindekiler otomatik getirilsin.</p>
+ <div class="card">
+  <input type="text" id="barcodeInput" inputmode="numeric" data-i-ph="barcode_placeholder" placeholder="Örn: 8690504041202">
+  <button class="btn" id="barcodeBtn" data-i="barcode_lookup">Sorgula</button>
+  <button class="btn gold" id="barcodeScanBtn" data-i="barcode_scan_btn" style="display:none">📷 Kamera ile Tara</button>
+ </div>
+ <div id="barcodeArea"></div>
+ <div class="disclaimer">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#a4842a" stroke-width="2"/><path d="M12 8v5" stroke="#a4842a" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1.1" fill="#a4842a"/></svg>
+  <span data-i="barcode_note">Barkod sorgusu internet bağlantısı gerektirir. Ürün veritabanında yoksa içindekileri Ana Sayfa'dan elle girebilirsin.</span>
+ </div>
+</section>
+
+<section class="screen" id="s-encyc">
+ <h2 data-i="encyc_title">Bileşen Rehberi</h2>
+ <p class="lead" data-i="encyc_lead">Sık karşılaşılan bileşenler ve neden işaretlendikleri.</p>
+ <div class="searchbox">
+  <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  <input type="text" id="encSearch" data-i-ph="encyc_search" placeholder="Bileşen ara...">
+ </div>
+ <div class="chips" id="encChips"></div>
+ <div id="encList"></div>
+ <div class="section-title" data-i="encyc_ok_title">Genelde Sorunsuz Kabul Edilenler</div>
+ <div id="okList"></div>
+</section>
+
+<section class="screen" id="s-history">
+ <h2 data-i="history_title">Geçmiş</h2>
+ <p class="lead" data-i="history_lead">Daha önce yaptığın kontroller burada listelenir.</p>
+ <div id="historyList"></div>
+</section>
+
+<section class="screen" id="s-settings">
+ <h2 data-i="settings_title">Ayarlar</h2>
+ <div class="card">
+  <div class="settingsrow">
+   <div><div class="sl" data-i="settings_lang">Uygulama Dili</div><div class="ss" data-i="settings_lang_sub">Türkçe / English</div></div>
+   <button class="btn ghost" style="width:auto;margin:0;padding:8px 16px" id="settingsLangBtn">TR</button>
+  </div>
+  <div class="settingsrow">
+   <div><div class="sl" data-i="settings_profile">Fıkıh Profili</div><div class="ss" id="profileSub">Hanefi (genel, muhafazakâr)</div></div>
+  </div>
+  <div class="settingsrow">
+   <div><div class="sl" data-i="settings_rulesver">Kural Seti Sürümü</div><div class="ss" id="rulesVerSub">—</div></div>
+  </div>
+  <div class="settingsrow">
+   <div><div class="sl" data-i="settings_clear">Geçmişi Temizle</div></div>
+   <button class="btn" style="width:auto;margin:0;padding:8px 16px;background:var(--haram)" id="clearHistBtn" data-i="settings_clear_btn">Temizle</button>
+  </div>
+ </div>
+ <div class="section-title" data-i="settings_ai_title">Yapay Zekâ Yardımı (Fotoğraf Okuma)</div>
+ <div class="card">
+  <p class="lead" style="margin-bottom:10px" data-i="settings_ai_lead">Fotoğrafla okuma sonrası bozuk/kırık kelimeleri düzeltmek için isteğe bağlı bir yardımcı sunucu adresi girebilirsin. Boş bırakılırsa yalnızca cihazdaki metin tanıma kullanılır.</p>
+  <input type="text" id="aiUrlInput" placeholder="https://senin-sunucun.ornek.com" style="margin-bottom:10px">
+  <input type="text" id="aiTokenInput" placeholder="Erişim anahtarı (opsiyonel)">
+  <button class="btn ghost" id="aiSaveBtn" data-i="settings_ai_save" style="margin-top:10px">Kaydet</button>
+  <div class="disclaimer" style="margin-top:12px">
+   <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#a4842a" stroke-width="2"/><path d="M12 8v5" stroke="#a4842a" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1.1" fill="#a4842a"/></svg>
+   <span data-i="settings_ai_note">Yapay zekâ yalnızca yazıyı okur/düzeltir; helal-haram kararını hiçbir zaman o vermez, karar her zaman kural motorundan gelir.</span>
+  </div>
+ </div>
+ <div class="section-title" data-i="settings_about">Hakkında</div>
+ <div class="card">
+  <p class="lead" style="margin-bottom:8px" data-i="about_p1">HelalGuard, ürün içindekiler listesindeki yaygın olarak tartışılan bileşenleri saydam kurallarla işaretleyen bilgilendirme aracıdır.</p>
+  <p class="lead" style="margin-bottom:8px" data-i="about_p2">Uygulama "haram" ve "belirsiz/şüpheli" ayrımını her zaman korur; metnin desteklemediği bir hükmü asla uydurmaz.</p>
+  <p class="lead" style="margin-bottom:0" data-i="about_p3">Bu uygulama dini bir otorite değildir. Kesin ve bağlayıcı hüküm için lütfen sertifikalı bir helal belgelendirme kurumuna veya güvendiğiniz bir alime danışın.</p>
+ </div>
+</section>
+
+</main>
+
+<nav class="tabbar">
+ <button class="active" data-screen="s-home"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-9z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span data-i="tab_home">Ana Sayfa</span></button>
+ <button data-screen="s-barcode"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6v12M8 6v12M11 6v12M14 6v12h2V6M19 6v12M17 6v3M17 15v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span data-i="tab_barcode">Barkod</span></button>
+ <button data-screen="s-encyc"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 00-3 3V4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 20a3 3 0 013-3h8" stroke="currentColor" stroke-width="1.8"/></svg><span data-i="tab_encyc">Rehber</span></button>
+ <button data-screen="s-history"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 109-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3 4v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7v5l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i="tab_history">Geçmiş</span></button>
+ <button data-screen="s-settings"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V21a2 2 0 11-4 0v-.09a1.7 1.7 0 00-1-1.56 1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.7 1.7 0 00.34-1.87 1.7 1.7 0 00-1.55-1H3a2 2 0 110-4h.09a1.7 1.7 0 001.55-1 1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06a1.7 1.7 0 001.87.34H9a1.7 1.7 0 001-1.55V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.55 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06a1.7 1.7 0 00-.34 1.87V9a1.7 1.7 0 001.55 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.55 1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span data-i="tab_settings">Ayarlar</span></button>
+</nav>
+<div class="toast" id="toast"></div>
+<script src="rules.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body></html>
